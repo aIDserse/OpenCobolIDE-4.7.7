@@ -131,9 +131,6 @@ class SearchAndReplacePanel(Panel, Ui_SearchPanel):
         self.job_runner = DelayJobRunner(delay=500)
         Ui_SearchPanel.__init__(self)
         self.setupUi(self)
-        self.toolButtonClose.clicked.connect(self.on_close)
-        self.actionSearch.triggered.connect(self.on_search)
-        self.actionActionSearchAndReplace.triggered.connect(self.on_search_and_replace)
         self.lineEditReplace.prompt_text = _(' Replace')
         #: Occurrences counter
         self.cpt_occurences = 0
@@ -272,10 +269,12 @@ class SearchAndReplacePanel(Panel, Ui_SearchPanel):
         self.lineEditReplace.clear()
         self.lineEditSearch.clear()
 
-    def on_close(self):
+    @QtCore.Slot()
+    def on_toolButtonClose_clicked(self):
         self.close_panel()
 
-    def on_search(self):
+    @QtCore.Slot()
+    def on_actionSearch_triggered(self):
         self.widgetSearch.show()
         self.widgetReplace.hide()
         self.show()
@@ -289,7 +288,8 @@ class SearchAndReplacePanel(Panel, Ui_SearchPanel):
         if not text_changed:
             self.request_search(new_text)
 
-    def on_search_and_replace(self):
+    @QtCore.Slot()
+    def on_actionActionSearchAndReplace_triggered(self):
         self.widgetSearch.show()
         self.widgetReplace.show()
         self.show()
@@ -519,7 +519,7 @@ class SearchAndReplacePanel(Panel, Ui_SearchPanel):
                         self.select_next()
                 return True
             elif event.key() == QtCore.Qt.Key_Escape:
-                self.on_close()
+                self.on_toolButtonClose_clicked()
         return Panel.eventFilter(self, obj, event)
 
     def _search_flags(self):

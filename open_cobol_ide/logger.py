@@ -69,5 +69,3 @@ def get_application_log():
         return content
     except FileNotFoundError:
         return ''
-    except MemoryError:
-        return 'Failed to open application log...'

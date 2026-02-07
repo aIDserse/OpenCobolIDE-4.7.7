@@ -7,7 +7,6 @@ import os
 import subprocess
 import sys
 import tempfile
-
 from pyqode.core.api import TextHelper
 from pyqode.core.modes import CheckerMessage, CheckerMessages
 from pyqode.qt import QtCore, QtGui, QtWidgets
@@ -210,11 +209,18 @@ class CobolController(Controller):
         """
         Compiles the current editor
         """
-        if self.app.edit.current_editor is None:
-            return
         # make sure the associated compiler is working, otherwise disable
         # compile/run actions
-        path = self.app.edit.current_editor.file.path
+        editor = getattr(self.app.edit, "current_editor", None)
+        if editor is None or getattr(editor, "file", None) is None:
+            QtWidgets.QMessageBox.warning(
+                self.app.win,
+                'Cannot compile file',
+                'No file is open.\n\nOpen a COBOL source file before compiling.'
+            )
+            return
+
+        path = editor.file.path
         dotted_extension = os.path.splitext(path)[1].upper()
         compiler_works, msg = self.check_compiler(dotted_extension)
         if not compiler_works:
@@ -223,6 +229,7 @@ class CobolController(Controller):
                 'Cannot compile file: %r.\n\nReason: %s' % (
                     os.path.split(path)[1], msg))
             return
+
         # ensures all editors are saved before compiling
         self.ui.tabWidgetEditors.save_all()
         # disable actions
@@ -235,8 +242,7 @@ class CobolController(Controller):
         self.ui.textEditCompilerOutput.clear()
         self.ui.tabWidgetLogs.setCurrentIndex(LOG_PAGE_COMPILER)
         self._compilation_thread = CompilationThread()
-        self._compilation_thread.file_path = \
-            self.app.edit.current_editor.file.path
+        self._compilation_thread.file_path = path
         self._compilation_thread.file_compiled.connect(self._on_file_compiled)
         self._compilation_thread.errored.connect(self._on_build_exception)
         self._compilation_thread.command_started.connect(
@@ -357,8 +363,6 @@ class CobolController(Controller):
         """
         Compiles and run the current editor.
         """
-        if self.app.edit.current_editor is None:
-            return
         self.ui.consoleOutput.clear()
         self._run_requested = True
         self.compile()
@@ -371,11 +375,9 @@ class CobolController(Controller):
         :param wd: working directory
         """
         pyqode_console = system.which('pyqode-console')
-        cobc_run_insert_pos = 1
         if pyqode_console is None:
             from pyqode.core.tools import console
             pyqode_console = [sys.executable, console.__file__]
-            cobc_run_insert_pos = 2
         else:
             pyqode_console = [pyqode_console]
         env = os.environ.copy()
@@ -389,10 +391,11 @@ class CobolController(Controller):
         if system.windows:
             cmd = pyqode_console + [program]
             if file_type == FileType.MODULE:
-                cmd.insert(cobc_run_insert_pos, system.which('cobcrun'))
+                cmd.insert(1, system.which('cobcrun'))
             try:
-                _logger().debug("running program in external terminal: %r, %r, %r" % (cmd, wd, env))
-                subprocess.Popen(cmd, cwd=wd, creationflags=subprocess.CREATE_NEW_CONSOLE, env=env)
+                subprocess.Popen(cmd, cwd=wd,
+                                 creationflags=subprocess.CREATE_NEW_CONSOLE,
+                                 env=env)
             except (OSError, subprocess.CalledProcessError):
                 msg = "Failed to launch program in external terminal (cmd=%s) " % ' '.join(cmd)
                 _logger().exception(msg)
@@ -417,16 +420,66 @@ class CobolController(Controller):
                 cmd = ['"%s %s"' % (' '.join(pyqode_console), program)]
             else:
                 cmd = ['"%s %s %s"' % (' '.join(pyqode_console), system.which('cobcrun'), program)]
-            cmd = system.shell_split(Settings().external_terminal_command.strip()) + cmd
+            cmd = system.shell_split(
+                Settings().external_terminal_command.strip()) + cmd
             try:
-                subprocess.Popen(' '.join(cmd), cwd=wd, shell=True, env=env)
+                subprocess.Popen(' '.join(cmd), cwd=wd, shell=True,
+                                 env=env)
             except (OSError, subprocess.CalledProcessError):
                 msg = "Failed to launch program in external terminal (cmd=%s) " % ' '.join(cmd)
                 _logger().exception(msg)
                 self.ui.consoleOutput.appendPlainText(msg)
                 return
-        _logger().info('running program in external terminal: %s', ' '.join(cmd))
-        self.ui.consoleOutput.appendPlainText("Launched in external terminal: %s" % ' '.join(cmd))
+        _logger().info('running program in external terminal: %s',
+                       ' '.join(cmd))
+        self.ui.consoleOutput.appendPlainText(
+            "Launched in external terminal: %s" % ' '.join(cmd))
+
+    def _start_console_process(self, program, args=None, wd=None, env=None, print_command=False):
+        """
+        Start a process in the embedded console output widget.
+
+        The console widget API differs across pyqode/OpenCobolIDE versions:
+        - some accept working_dir=
+        - some accept cwd=
+        - some accept print_command=
+        - some accept none (older)
+        So we try progressively and fallback to chdir for old APIs.
+        """
+        if args is None:
+            args = []
+
+        # Try newer signature first
+        try:
+            return self.ui.consoleOutput.start_process(
+                program, args,
+                working_dir=wd, env=env, print_command=print_command
+            )
+        except TypeError:
+            pass
+
+        # Try cwd= signature
+        try:
+            return self.ui.consoleOutput.start_process(
+                program, args,
+                cwd=wd, env=env
+            )
+        except TypeError:
+            pass
+
+        # Old API: no cwd/working_dir kwargs. Last resort: chdir.
+        old_cwd = None
+        try:
+            if wd:
+                old_cwd = os.getcwd()
+                os.chdir(wd)
+            return self.ui.consoleOutput.start_process(program, args)
+        finally:
+            if old_cwd is not None:
+                try:
+                    os.chdir(old_cwd)
+                except Exception:
+                    pass
 
     def _run(self):
         """
@@ -468,12 +521,24 @@ class CobolController(Controller):
             env = Settings().run_environemnt
             if 'PATH' not in env.keys():
                 env['PATH'] = path
+
             if file_type == FileType.MODULE:
                 cobcrun = system.which('cobcrun')
-                self.ui.consoleOutput.start_process(
-                    cobcrun, [os.path.splitext(editor.file.name)[0]], working_dir=wd, env=env)
+                self._start_console_process(
+                    cobcrun,
+                    [os.path.splitext(editor.file.name)[0]],
+                    wd=wd,
+                    env=env,
+                    print_command=True
+                )
             else:
-                self.ui.consoleOutput.start_process(program, working_dir=wd, env=env, print_command=True)
+                self._start_console_process(
+                    program,
+                    [],
+                    wd=wd,
+                    env=env,
+                    print_command=True
+                )
 
     def _on_run_finished(self):
         self.enable_compile(True)

@@ -13,6 +13,20 @@ import time
 import traceback
 import threading
 
+# --- FIX: make bundled extlibs visible as top-level modules (pyqode, etc.) ---
+def _add_sys_path(p):
+    if p and os.path.isdir(p) and p not in sys.path:
+        sys.path.insert(0, p)
+
+# 1) Prefer env override if user set it
+_add_sys_path(os.environ.get("OCIDE_EXTLIBS_PATH", "").strip())
+
+# 2) Fallback: compute ".../open_cobol_ide/extlibs" from this file location
+# This file lives in: <extlibs>/pyqode/core/backend/server.py
+_here = os.path.abspath(os.path.dirname(__file__))
+_extlibs = os.path.abspath(os.path.join(_here, "..", "..", "..", ".."))  # -> <extlibs>
+_add_sys_path(_extlibs)
+# ---------------------------------------------------------------------------
 
 try:
     import socketserver
@@ -37,7 +51,6 @@ def import_class(klass):
     :param klass: class string, e.g.
         "pyqode.core.backend.workers.CodeCompletionWorker"
     :return: The corresponding class
-
     """
     path = klass.rfind(".")
     class_name = klass[path + 1: len(klass)]
@@ -63,7 +76,6 @@ class JsonServer(socketserver.TCPServer):
             Read x bytes
 
             :param size: number of bytes to read.
-
             """
             if not PY33:
                 data = ''
@@ -102,7 +114,7 @@ class JsonServer(socketserver.TCPServer):
 
         def handle(self):
             """
-            Hanlde the request and keep it alive while shutdown signal
+            Handle the request and keep it alive while shutdown signal
             has not been received
             """
             self.srv.reset_heartbeat()
@@ -149,16 +161,15 @@ class JsonServer(socketserver.TCPServer):
                         self.send(response)
                     except ConnectionAbortedError:
                         pass
-            except:
-                _logger().warn('error with data=%r', data)
+            except Exception:
+                _logger().warning('error with data=%r', data)
                 exc1, exc2, exc3 = sys.exc_info()
                 traceback.print_exception(exc1, exc2, exc3, file=sys.stderr)
 
     def __init__(self, args=None):
         """
         :param args: Argument parser args. If None, the server will setup and
-            use its own argument parser (using
-            :meth:`pyqode.core.backend.default_parser`)
+            use its own argument parser (using default_parser)
         """
         self.reset_heartbeat()
         if not args:
@@ -189,14 +200,7 @@ class JsonServer(socketserver.TCPServer):
 
 def default_parser():
     """
-    Configures and return the default argument parser. You should use this
-    parser as a base if you want to add custom arguments.
-
-    The default parser only has one argument, the tcp port used to start the
-    server socket. *(CodeEdit picks up a free port and use it to run
-    the server and connect its client socket)*
-
-    :returns: The default server argument parser.
+    Configures and return the default argument parser.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("port", help="the local tcp port to use to run "
@@ -207,10 +211,6 @@ def default_parser():
 def serve_forever(args=None):
     """
     Creates the server and serves forever
-
-    :param args: Optional args if you decided to use your own
-        argument parser. Default is None to let the JsonServer setup its own
-        parser and parse command line arguments.
     """
     class Unbuffered(object):
         def __init__(self, stream):

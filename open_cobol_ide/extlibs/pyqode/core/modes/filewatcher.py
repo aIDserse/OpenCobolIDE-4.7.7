@@ -135,8 +135,6 @@ class FileWatcherMode(Mode, QtCore.QObject):
         """
         Notify user from external event
         """
-        if self.editor is None:
-            return
         inital_value = self.editor.save_on_focus_out
         self.editor.save_on_focus_out = False
         self._flg_notify = True

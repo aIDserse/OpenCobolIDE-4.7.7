@@ -7,7 +7,6 @@ from open_cobol_ide.enums import GnuCobolStandard
 from open_cobol_ide.settings import Settings
 from open_cobol_ide.view.forms import dlg_preferences_ui
 from open_cobol_ide.view.dialogs.check_compiler import DlgCheckCompiler
-from open_cobol_ide.view.dialogs.cobc_help import DlgCobcHelp
 
 DEFAULT_TEMPLATE = '''      * Author:
       * Date:
@@ -44,7 +43,7 @@ DEFAULT_TEMPLATE = '''      * Author:
 
 class DlgPreferences(QtWidgets.QDialog, dlg_preferences_ui.Ui_Dialog):
     flags_in_checkbox = [
-        '-g', '-ftrace', '-ftraceall', '-fdebugging-line', '-static', '-debug', '-W', '-Wall'
+        '-g', '-ftrace', '-ftraceall', '-fdebugging-line', '-static', '-debug'
     ]
 
     def __init__(self, parent):
@@ -52,7 +51,6 @@ class DlgPreferences(QtWidgets.QDialog, dlg_preferences_ui.Ui_Dialog):
                          QtCore.Qt.WindowTitleHint |
                          QtCore.Qt.WindowCloseButtonHint)
         self.setupUi(self)
-        self._help_dlg = None
         themes = system.icon_themes()
         if themes:
             self.comboBoxIconTheme.addItems(themes)
@@ -124,7 +122,6 @@ class DlgPreferences(QtWidgets.QDialog, dlg_preferences_ui.Ui_Dialog):
             self._add_rel_copy_path)
         self.btRemoveCopyPath.clicked.connect(self._rm_copy_path)
         self.toolButtonESQLOC.clicked.connect(self._select_esqloc)
-        self.btCompilerFlagsHelp.clicked.connect(self._show_gnu_cobol_help)
         if not system.windows:
             self.labelVCVARS.hide()
             self.lineEditVCVARS.hide()
@@ -241,12 +238,6 @@ class DlgPreferences(QtWidgets.QDialog, dlg_preferences_ui.Ui_Dialog):
         if path:
             self.lineEditCompilerPath.setText(system.normpath(path))
             self._check_compiler()
-
-    def _show_gnu_cobol_help(self):
-        if self._help_dlg is None or not self._help_dlg.isVisible():
-            help_text = compilers.GnuCobolCompiler.get_cobc_help()
-            self._help_dlg = DlgCobcHelp(self, help_text)
-            self._help_dlg.show()
 
     def _select_esqloc(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(
@@ -454,8 +445,6 @@ class DlgPreferences(QtWidgets.QDialog, dlg_preferences_ui.Ui_Dialog):
             self.cb_g.setChecked(self.cb_g.text().replace('&', '') in flags)
             self.cb_static.setChecked(self.cb_static.text().replace('&', '') in flags)
             self.cb_debug.setChecked(self.cb_debug.text().replace('&', '') in flags)
-            self.cb_w.setChecked(self.cb_w.text().replace('&', '') in flags)
-            self.cb_wall.setChecked(self.cb_wall.text().replace('&', '') in flags)
             for v in self.flags_in_checkbox:
                 try:
                     flags.remove(v)
@@ -544,7 +533,7 @@ class DlgPreferences(QtWidgets.QDialog, dlg_preferences_ui.Ui_Dialog):
             settings.free_format = False
             settings.cobol_standard = GnuCobolStandard.default
             settings.compiler_path = 'cobc.exe' if system.windows else 'cobc'
-            settings.compiler_flags = ['-debug', '-Wall']
+            settings.compiler_flags = ['-debug']
             settings.copybook_paths = ''
             settings.library_search_path = ''
             settings.libraries = ''
@@ -635,8 +624,7 @@ class DlgPreferences(QtWidgets.QDialog, dlg_preferences_ui.Ui_Dialog):
         settings.output_directory = self.lineEditOutputDirectory.text()
         settings.copy_runtime_dlls = self.cb_copy_runtime_dlls.isChecked()
         cb_flags = [self.cb_g, self.cb_ftrace, self.cb_ftraceall,
-                    self.cb_debugging_line, self.cb_static, self.cb_debug,
-                    self.cb_w, self.cb_wall]
+                    self.cb_debugging_line, self.cb_static, self.cb_debug]
         flags = [cb.text() for cb in cb_flags if cb.isChecked()]
         flags += system.shell_split(self.le_compiler_flags.text())
         settings.compiler_flags = flags

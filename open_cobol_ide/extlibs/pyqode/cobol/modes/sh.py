@@ -17,14 +17,20 @@ def make_cobol_patterns(fixed_format=True):
     if fixed_format:
         comment = any('comment', [r"\*>[^\n]*|(^.{6})\*[^\n]*"])
     else:
-        comment = any('comment', [r"\*>[^\n]*"])
+        comment = any('comment', [r"\*>[^\n]*|\s*\*[^\n]*"])
     keywords_reserved = any(
         'keyword_reserved',
         ['(^|(?<=[^0-9a-zA-Z_\-]))(%s)\s*($|(?=[^0-9a-zA-Z_\-]))' %
-         '|'.join(kw.RESERVED + kw.SQL_COBOL_KEYWORDS + kw.MNEMONICS)])
+         '|'.join(kw.RESERVED + kw.SQL_COBOL_KEYWORDS)])
+    keywords = any(
+        'keyword',
+        [r'(^|(?<=[^0-9a-zA-Z_\-]))(%s)\s*($|(?=[^0-9a-zA-Z_\-]))' %
+         '|'.join(kw.PSEUDO)])
     constants = any(
         'constant',
-        ['(^|(?<=[^0-9a-zA-Z_\-]))'
+        [r'(^|(?<=[^0-9a-zA-Z_\-]))((%s)|(%s))\s*($|(?=[^0-9a-zA-Z_\-]))' %
+         (kw.NAME_CONSTANTS[0], '|'.join(kw.NAME_CONSTANTS[1:])),
+         '(^|(?<=[^0-9a-zA-Z_\-]))'
          '(^|(?<=[^0-9a-zA-Z_\-]))(equal|equals|ne|lt|le|gt|ge|'
          'greater|less|than|not|and|or)\s*($|(?=[^0-9a-zA-Z_\-]))'])
     types = any('type', [
@@ -51,6 +57,7 @@ def make_cobol_patterns(fixed_format=True):
     return "|".join(
         [
             keywords_reserved,
+            keywords,
             constants,
             types,
             comment,
@@ -88,7 +95,8 @@ class CobolSyntaxHighlighter(BaseSH):
                     start, end = match.span(key)
                     try:
                         fmt = self.formats[key]
-                        fmt.setFontWeight(QtGui.QFont.Normal)
+                        if key == 'keyword':
+                            fmt.setFontWeight(QtGui.QFont.Normal)
                     except KeyError:
                         _logger().debug('unsupported format: %s' % key)
                     else:

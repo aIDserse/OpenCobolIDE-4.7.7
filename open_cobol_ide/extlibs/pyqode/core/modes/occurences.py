@@ -90,15 +90,6 @@ class OccurrencesHighlighterMode(Mode):
                     # this should never happen since we're working with clones
                     pass
 
-    @property
-    def case_sensitive(self):
-        return self._case_sensitive
-
-    @case_sensitive.setter
-    def case_sensitive(self, value):
-        self._case_sensitive = value
-        self._request_highlight()
-
     def __init__(self):
         super(OccurrencesHighlighterMode, self).__init__()
         self._decorations = []
@@ -108,7 +99,6 @@ class OccurrencesHighlighterMode(Mode):
         self._background = QtGui.QColor('#CCFFCC')
         self._foreground = None
         self._underlined = False
-        self._case_sensitive = False
 
     def on_state_changed(self, state):
         if state:
@@ -144,7 +134,7 @@ class OccurrencesHighlighterMode(Mode):
                 'sub': self._sub,
                 'regex': False,
                 'whole_word': True,
-                'case_sensitive': self.case_sensitive
+                'case_sensitive': True
             }
             try:
                 self.editor.backend.send_request(findall, request_data,

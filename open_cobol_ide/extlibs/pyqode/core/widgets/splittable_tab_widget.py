@@ -164,12 +164,14 @@ class BaseTabWidget(QtWidgets.QTabWidget):
         else:
             return self.currentIndex()
 
+    @QtCore.Slot()
     def close(self):
         """
         Closes the active editor
         """
         self.tabCloseRequested.emit(self.tab_under_menu())
 
+    @QtCore.Slot()
     def close_others(self):
         """
         Closes every editors tabs except the current one.
@@ -184,6 +186,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
                 else:
                     i = 1
 
+    @QtCore.Slot()
     def close_left(self):
         """
         Closes every editors tabs on the left of the current one.
@@ -198,6 +201,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
                 else:
                     break
 
+    @QtCore.Slot()
     def close_right(self):
         """
         Closes every editors tabs on the left of the current one.
@@ -212,6 +216,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
                 else:
                     break
 
+    @QtCore.Slot()
     def close_all(self):
         """
         Closes all editors
@@ -224,6 +229,7 @@ class BaseTabWidget(QtWidgets.QTabWidget):
             return True
         return False
 
+    @QtCore.Slot()
     def detach_tab(self):
         tab_index = self.tab_under_menu()
         tab = self.widget(tab_index)

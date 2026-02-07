@@ -1,7 +1,7 @@
 import os
 import sys
 from pyqode.core import widgets
-from open_cobol_ide import backend
+from pyqode.core.backend import server
 
 
 class GenericCodeEdit(widgets.GenericCodeEdit):
@@ -15,4 +15,4 @@ class GenericCodeEdit(widgets.GenericCodeEdit):
             base_backend += '.exe'
         super().__init__(
             parent, server_script=os.path.join(cwd, base_backend)
-            if hasattr(sys, 'frozen') else backend.__file__)
+            if hasattr(sys, 'frozen') else server.__file__)

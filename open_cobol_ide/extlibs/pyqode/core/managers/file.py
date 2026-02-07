@@ -240,6 +240,8 @@ class FileManager(Manager):
         for m in self.editor.modes:
             if m.enabled:
                 m.enabled = enable_modes
+        if not enable_modes:
+            self.editor.modes.clear()
         # open file and get its content
         try:
             with open(path, 'Ur', encoding=encoding) as file:
@@ -400,29 +402,30 @@ class FileManager(Manager):
             self.saving = False
             self.editor.text_saved.emit(str(path))
             raise e
-        # cache update encoding
-        Cache().set_file_encoding(path, encoding)
-        self._encoding = encoding
-        # remove path and rename temp file, if safe save is on
-        if self.safe_save:
-            self._rm(path)
-            os.rename(tmp_path, path)
-            self._rm(tmp_path)
-        # reset dirty flags
-        self.editor.document().setModified(False)
-        # remember path for next save
-        self._path = os.path.normpath(path)
-        self.editor.text_saved.emit(str(path))
-        self.saving = False
-        _logger().debug('file saved: %s', path)
-        self._check_for_readonly()
+        else:
+            # cache update encoding
+            Cache().set_file_encoding(path, encoding)
+            self._encoding = encoding
+            # remove path and rename temp file, if safe save is on
+            if self.safe_save:
+                self._rm(path)
+                os.rename(tmp_path, path)
+                self._rm(tmp_path)
+            # reset dirty flags
+            self.editor.document().setModified(False)
+            # remember path for next save
+            self._path = os.path.normpath(path)
+            self.editor.text_saved.emit(str(path))
+            self.saving = False
+            _logger().debug('file saved: %s', path)
+            self._check_for_readonly()
 
-        # restore file permission
-        if st_mode:
-            try:
-                os.chmod(path, st_mode)
-            except (ImportError, TypeError, AttributeError):
-                pass
+            # restore file permission
+            if st_mode:
+                try:
+                    os.chmod(path, st_mode)
+                except (ImportError, TypeError, AttributeError):
+                    pass
 
     def close(self, clear=True):
         """

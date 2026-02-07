@@ -82,9 +82,8 @@ class DBusKeyring(KeyringBackend):
             return None
         if not self.iface.hasEntry(self.handle, service, username, self.appid):
             return None
-        password = self.iface.readPassword(
+        return self.iface.readPassword(
             self.handle, service, username, self.appid)
-        return str(password)
 
     def set_password(self, service, username, password):
         """Set password for the username of the service

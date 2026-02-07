@@ -73,7 +73,7 @@ class GoToDefinitionMode(Mode, QObject):
                 self._timer.request_job(self.word_clicked.emit, cursor)
 
     def find_definition(self, symbol, definition):
-        if symbol.lower() == definition.name.lower().replace(" section", "").replace(" division", ""):
+        if symbol in TextHelper(self.editor).line_text(definition.line):
             return definition
         for ch in definition.children:
             d = self.find_definition(symbol, ch)
@@ -128,6 +128,7 @@ class GoToDefinitionMode(Mode, QObject):
                    the text cursor.
         :type tc: QtGui.QTextCursor
         """
+        print('request goto')
         if not tc:
             tc = TextHelper(self.editor).word_under_cursor(
                 select_whole_word=True)
@@ -137,7 +138,6 @@ class GoToDefinitionMode(Mode, QObject):
             QTimer.singleShot(100, self._goto_def)
 
     def _goto_def(self):
-        if self._definition:
-            line = self._definition.line
-            col = self._definition.column
-            TextHelper(self.editor).goto_line(line, move=True, column=col)
+        line = self._definition.line
+        col = self._definition.column
+        TextHelper(self.editor).goto_line(line, move=True, column=col)

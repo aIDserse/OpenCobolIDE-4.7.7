@@ -95,8 +95,5 @@ class DlgReport(QtWidgets.QDialog):
             if body is None and log is None:
                 return  # user cancelled the review dialog
 
-        try:
-            if backend.send_report(title, body, log):
-                self.accept()
-        except Exception as e:
-            QtWidgets.QMessageBox.warning(self, "Failed to send report", "Failed to send report.\n\n%r" % e)
+        if backend.send_report(title, body, log):
+            self.accept()

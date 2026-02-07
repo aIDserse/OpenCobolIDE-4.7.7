@@ -11,6 +11,7 @@ It is designed to be used as follows::
 And then these normal Py3 imports work on both Py3 and Py2::
 
     import builtins
+    import configparser
     import copyreg
     import queue
     import reprlib
@@ -197,7 +198,6 @@ MOVES = [('collections', 'UserList', 'UserList', 'UserList'),
          ('collections', 'Counter', 'future.backports.misc', 'Counter'),
          ('itertools', 'count', 'future.backports.misc', 'count'),
          ('reprlib', 'recursive_repr', 'future.backports.misc', 'recursive_repr'),
-         ('functools', 'cmp_to_key', 'future.backports.misc', 'cmp_to_key'),
 
 # This is no use, since "import urllib.request" etc. still fails:
 #          ('urllib', 'error', 'future.moves.urllib', 'error'),
@@ -739,9 +739,8 @@ class exclude_local_folder_imports(object):
     A context-manager that prevents standard library modules like configparser
     from being imported from the local python-future source folder on Py3.
 
-    (This was need prior to v0.16.0 because the presence of a configparser
-    folder would otherwise have prevented setuptools from running on Py3. Maybe
-    it's not needed any more?)
+    (The presence of a configparser folder would otherwise prevent setuptools
+    from running on Py3.)
     """
     def __init__(self, *args):
         assert len(args) > 0
@@ -755,9 +754,7 @@ class exclude_local_folder_imports(object):
         self.old_sys_modules = copy.copy(sys.modules)
         if sys.version_info[0] < 3:
             return
-        # The presence of all these indicates we've found our source folder,
-        # because `builtins` won't have been installed in site-packages by setup.py:
-        FUTURE_SOURCE_SUBFOLDERS = ['future', 'past', 'libfuturize', 'libpasteurize', 'builtins']
+        FUTURE_SOURCE_SUBFOLDERS = ['future', 'past', 'libfuturize', 'configparser']
 
         # Look for the future source folder:
         for folder in self.old_sys_path:
@@ -789,6 +786,7 @@ class exclude_local_folder_imports(object):
             sys.modules[m] = self.old_sys_modules[m]
 
 TOP_LEVEL_MODULES = ['builtins',
+                     'configparser',
                      'copyreg',
                      'html',
                      'http',

@@ -191,9 +191,6 @@ class EncodingPanel(Panel):
     def cancel(self):
         if self.sender():
             self.editor.clear()
-        self.close_panel()
-
-    def close_panel(self):
         self._rm_deco()
         self.enable_caret_line(True)
         self.cancel_requested.emit(self.editor)

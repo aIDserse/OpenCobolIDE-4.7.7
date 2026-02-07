@@ -264,7 +264,7 @@ class EditController(Controller):
         text = text[:original]
         try:
             return len(bytes(text, encoding))
-        except UnicodeEncodeError:
+        except UnicodeDecodeError:
             return original
 
     def _update_status_bar_labels(self):
