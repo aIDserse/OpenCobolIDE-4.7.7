@@ -10,24 +10,6 @@ No long-term roadmap, no promise of upstream parity: it exists because I needed 
 The name Opencobolide-4.7.7 is intentionally “one step after” the last upstream release (4.7.6): not because there is a new upstream version,
 but because this fork bundles a set of compatibility fixes that make the original codebase run correctly again (even tho it's based of 4.7.4 because thats what I found in SlackBuilds lol).
 
-Features
---------
-
-- COBOL syntax highlighter
-- COBOL code completion
-- COBOL code folding
-- configurable margins
-- navigable tree view of division, sections, paragraphs etc (fully synchronised
-  with the code folding panel)
-- auto-indentation
-- tool for computing PIC fields offsets
-- compile as a program (.exe) or as a subprogram (.so/.dll)
-- run the program from the editor or from a configurable external terminal (
-  necessary if you are using the SCREEN section).
-- dark color schemes and theme
-- cross platform: works on GNU/Linux, Windows and Mac OSX
-- dbpre integration on Linux, esqlOC on Windows
-
 What changed in this fork
 -------------------------
 
@@ -81,25 +63,7 @@ In that case, fixes should still be possible, but they may require additional sm
 License
 -------
 
-OpenCobolIDE is released under the GPL version 3.
-
-Dependencies
-------------
-
-- GnuCOBOL_
-- Python3_ (tested with Python 3.9)
-- PyQt5_ (preferred) or PyQt4_
-- setuptools_
-
-*Starting from v4.7, the following pure python dependencies are bundled with OCIDE:*
-
-- pyqode.qt_
-- pyqode.core_
-- pyqode.cobol_
-- Pygments_
-- qdarkstyle_
-- keyring_
-- githubpy_
+OpenCobolIDE is released under the GPL version 3 (and i obviously follow that).
 
 Installation
 ------------
