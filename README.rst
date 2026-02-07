@@ -1,10 +1,17 @@
-OpenCobolIDE
-------------
+Opencobolide-4.7.7
+------------------
 
-**OpenCobolIDE is no longer maintained**, see https://github.com/OpenCobolIDE/OpenCobolIDE/issues/439
+OpenCobolIDE is no longer maintained, see https://github.com/OpenCobolIDE/OpenCobolIDE/issues/439
 
-Features:
----------
+This repository is a practical fork created to keep OpenCobolIDE usable *today* on a modern Slackware system (tested on Slackware 15.0, Python 3.9).
+The goal is simple and finite: have a COBOL IDE that can open a file, compile, run, and show output *without* having to fall back to the terminal every time.
+No long-term roadmap, no promise of upstream parity: it exists because I needed it working, and now it does.
+
+The name Opencobolide-4.7.7 is intentionally “one step after” the last upstream release (4.7.6): not because there is a new upstream version,
+but because this fork bundles a set of compatibility fixes that make the original codebase run correctly again (even tho it's based of 4.7.4 because thats what I found in SlackBuilds lol).
+
+Features
+--------
 
 - COBOL syntax highlighter
 - COBOL code completion
@@ -18,164 +25,108 @@ Features:
 - run the program from the editor or from a configurable external terminal (
   necessary if you are using the SCREEN section).
 - dark color schemes and theme
-- cross platform: works on **GNU/Linux**, **Windows** and **Mac OSX**
+- cross platform: works on GNU/Linux, Windows and Mac OSX
 - dbpre integration on Linux, esqlOC on Windows
 
+What changed in this fork
+-------------------------
+
+This fork applies a small set of targeted fixes, mostly focused on:
+
+1) Python compatibility
+   - Removed reliance on deprecated/removed APIs (e.g. old distro detection via platform.linux_distribution()).
+     The objective is not to replace it with another fragile detection mechanism, but to avoid crashing at import time.
+
+2) Qt signal/slot correctness (the “triggered(bool)” problem)
+   - Qt actions connected to slots that did not match the expected signature caused warnings like:
+     ``QObject::connect: Cannot connect QAction::triggered(bool) to (nullptr)::to_lower()``
+
+     In practice this meant a key assumption (“the editor/action target is always valid at that moment”) was not holding.
+     When the action wiring failed, the editor could not reliably operate on the current document state, leading to repeated failures and odd behaviour
+     (including situations where UI actions effectively became unusable).
+     The fix makes the slots and action creation robust and compatible with the Qt signal signature.
+
+3) Backend / extlibs import reliability
+   - OpenCobolIDE bundles a lot of pure-python dependencies in open_cobol_ide/extlibs.
+     This is useful, but it also means the import path must be deterministic for both the main process and the backend process.
+   - The backend startup script is adjusted so it can always find the bundled libraries without depending on “whatever happens to be first on sys.path”.
+   - With total honesty, here I used chatgpt because I had no clue of what I was doing (If i want to run OpenCobolIDE I suppose you understand I am not exacly a Python guy...)
+
+4) Eliminating stdlib shadowing
+   - The bundled extlibs contained a module that could shadow Python’s standard library enum module.
+     When that happened, Python would lose enum.IntFlag, and even importing re could explode.
+     The fix removes that shadowing, restoring correct stdlib behaviour.
+
+The compile action is now guarded: if no file is open, it shows a warning instead of crashing or entering an inconsistent state.
+   - Additionally, a logic path could lead to the compile button being disabled “by itself” depending on state transitions.
+     This was corrected so the UI reliably allows compiling both executables and modules once the prerequisites are met.
+
+This fork is Slackware-centered
+-------------------------------
+
+This work was done and tested on Slackware 15.0 with Python 3.9.
+It should be broadly portable, but this fork does not claim universal compatibility.
+Slackware’s conservative base and straightforward packaging model make this kind of “keep it working” effort excepitionally practical.
+
+.. image:: doc/Images/slackoff.jpg
+    :align: center
+
+If you run it on another distribution and it fails, it will most likely be due to:
+- newer Python versions removing additional old APIs used by bundled dependencies,
+- different Qt/PyQt packaging and import layouts,
+- stricter packaging defaults.
+
+In that case, fixes should still be possible, but they may require additional small patches.
 
 License
 -------
 
-OpenCobolIDE is released under the **GPL** version 3
-
+OpenCobolIDE is released under the GPL version 3.
 
 Dependencies
 ------------
 
-- `GnuCOBOL`_
-- `Python3`_ >= 3.3
-- `PyQt5`_ (preferred) or `PyQt4`_
-- `setuptools`_
+- GnuCOBOL_
+- Python3_ (tested with Python 3.9)
+- PyQt5_ (preferred) or PyQt4_
+- setuptools_
 
-*Starting from v4.7, the following pure python dependencies are bundled with OCIDE (this makes packaging easier):*
+*Starting from v4.7, the following pure python dependencies are bundled with OCIDE:*
 
-- `pyqode.qt`_
-- `pyqode.core`_
-- `pyqode.cobol`_
-- `Pygments`_
-- `qdarkstyle`_
-- `keyring`_
-- `githubpy`_
-
+- pyqode.qt_
+- pyqode.core_
+- pyqode.cobol_
+- Pygments_
+- qdarkstyle_
+- keyring_
+- githubpy_
 
 Installation
 ------------
 
-GNU/Linux
+Slackware
 #########
 
-*Note: starting from v4.6.2, the installed executable name is lowercase: opencobolide*
+This fork is intended to be built/installed in a Slackware-friendly way (SlackBuild style).
+If you are using the SlackBuilds tree, the original packaging approach still applies:
+extract source, run the build script, then install the resulting package.
 
-Ubuntu
-++++++
-
-A debian package is available here: https://launchpad.net/cobcide/+download
-
-This package should work on any Ubuntu version >= 14.04 and on any version
-derived from Ubuntu.
-
-Fedora
-++++++
-
-A RPM package for Fedora 23 is available here: https://launchpad.net/cobcide/+download
-
-
-ArchLinux
-+++++++++
-
-OpenCobolIDE is available from the `AUR`_.
-
-You can install using one of the many available AUR helper; e.g. using yaourt::
-
-    yaourt -S opencobolide
-
-KaOS
-++++
-
-OpenCobolIDE is up in the KaOs Community Packages (KCP)::
-
-    kcp -i gnu-cobol
-    kcp -i opencobolide
-
+The key difference is that this fork already includes the fixed sources, so you should not need post-install editing.
 
 Other distributions
 +++++++++++++++++++
 
-Install Python3, PyQt5, GnuCOBOL and pip for Python3 using your package manager, then run the following commands::
+If your system provides Python3, PyQt5, and GnuCOBOL, you can generally install from source.
+Because upstream is old and modern build tooling increasingly assumes wheels/PEP517,
+a plain setup.py install-style install may be the simplest approach on some systems.
 
-    sudo pip3 install OpenCobolIDE --upgrade
-
-
-Note that if you have both PyQt5 and PyQt4 on your system, the IDE will use
-PyQt5 by default. To force the use of PyQt4, you should set the
-``QT_API`` environment variable to ``pyqt4``.
-
-
-Windows
-#######
-
-There is a windows installer available here: https://launchpad.net/cobcide/+download
-
-Mac OSX
-#######
-
-There is a dmg image available here: https://launchpad.net/cobcide/+download
-
-Before running the app, you first have to install the GnuCOBOL compiler, e.g.
-using homebrew::
-
-    brew install gnu-cobol
-
-
-If you installed the compiler in a non-standard path and it is not recognized
-by the IDE, you can specify the path to the compiler in the preferences
-dialog (``Compiler`` tab)
-
-
-Resources
----------
-
--  `Downloads`_
--  `Source repository`_
--  `Issue tracker`_
--  `Documentation`_
-
-
-Screenshots
+Screenshot
 -----------
 
-* Home page:
-
-.. image:: https://raw.githubusercontent.com/OpenCobolIDE/OpenCobolIDE/master/doc/source/_static/Home.png
+.. image:: doc/Images/Screenshot.png
     :align: center
 
-* Editor:
-
-.. image:: https://raw.githubusercontent.com/OpenCobolIDE/OpenCobolIDE/master/doc/source/_static/MainWindow.png
+Get slack!!!
+-----------
+.. image:: doc/Images/dobbs.jpg
     :align: center
-
-* Code folding:
-
-.. image:: https://raw.githubusercontent.com/OpenCobolIDE/OpenCobolIDE/master/doc/source/_static/Folding.png
-    :align: center
-
-* Offset calculator
-
-.. image:: https://raw.githubusercontent.com/OpenCobolIDE/OpenCobolIDE/master/doc/source/_static/PicOffsets.png
-    :align: center
-
-
-* Dark style support
-
-.. image:: https://raw.githubusercontent.com/OpenCobolIDE/OpenCobolIDE/master/doc/source/_static/Dark.png
-    :align: center
-
-
-.. _PyQt4: http://www.riverbankcomputing.co.uk/software/pyqt/download
-.. _Downloads: https://launchpad.net/cobcide/+download
-.. _Source repository: https://github.com/OpenCobolIDE/OpenCobolIDE/
-.. _Issue tracker: https://github.com/OpenCobolIDE/OpenCobolIDE/issues?state=open
-.. _Documentation: http://opencobolide.readthedocs.org/en/latest/
-.. _Pygments: http://pygments.org/
-.. _pyqode.core: https://github.com/pyQode/pyqode.core/
-.. _pyqode.cobol: https://github.com/pyQode/pyqode.cobol/
-.. _pyqode.qt: https://github.com/pyQode/pyqode.qt/
-.. _GnuCOBOL: http://sourceforge.net/projects/open-cobol/
-.. _setuptools: https://pypi.python.org/pypi/setuptools
-.. _Python3: http://python.org/
-.. _PyQt5: http://www.riverbankcomputing.co.uk/software/pyqt/download
-.. _qdarkstyle: https://github.com/ColinDuquesnoy/QDarkStyleSheet
-.. _pyQode: https://github.com/pyQode/
-.. _githubpy: https://pypi.python.org/pypi/githubpy
-.. _keyring: https://pypi.python.org/pypi/keyring
-.. _HackEdit: https://github.com/HackEdit/hackedit
-.. _AUR: https://aur.archlinux.org/packages/opencobolide/
