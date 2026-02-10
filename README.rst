@@ -1,4 +1,4 @@
-Opencobolide-4.7.7
+OpenCobolIDE-4.7.7
 ------------------
 
 OpenCobolIDE is no longer maintained, see https://github.com/OpenCobolIDE/OpenCobolIDE/issues/439
