@@ -99,7 +99,7 @@ Other distributions
 
 If your system provides Python3, PyQt5, and GnuCOBOL, you can generally install from source.
 Because upstream is old and modern build tooling increasingly assumes wheels/PEP517,
-a plain ``setup.py install``-style install may be the simplest approach on some systems.
+a plain ``sudo python3 setup.py install`` install may be the simplest approach on some systems.
 
 Arch / Manjaro note (GnuCOBOL config)
 ----------
