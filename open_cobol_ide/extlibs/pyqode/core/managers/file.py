@@ -244,7 +244,7 @@ class FileManager(Manager):
             self.editor.modes.clear()
         # open file and get its content
         try:
-            with open(path, 'Ur', encoding=encoding) as file:
+            with open(path, 'r', encoding=encoding) as file:
                 content = file.read()
                 if self.autodetect_eol:
                     self._eol = file.newlines

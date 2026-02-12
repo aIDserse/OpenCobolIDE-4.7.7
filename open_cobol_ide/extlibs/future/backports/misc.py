@@ -14,7 +14,10 @@ from __future__ import absolute_import
 
 import subprocess
 from math import ceil as oldceil
-from collections import Mapping, MutableMapping
+try:
+    from collections.abc import Mapping, MutableMapping
+except ImportError:
+    from collections import Mapping, MutableMapping
 
 from operator import itemgetter as _itemgetter, eq as _eq
 import sys

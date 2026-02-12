@@ -5,7 +5,10 @@ Why do this? Without it, the Python 2 bytes object is a very, very
 different beast to the Python 3 bytes object.
 """
 
-from collections import Iterable
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 from numbers import Integral
 import string
 

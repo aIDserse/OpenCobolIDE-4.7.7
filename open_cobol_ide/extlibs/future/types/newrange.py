@@ -19,7 +19,10 @@ From Dan Crosta's README:
 """
 from __future__ import absolute_import
 
-from collections import Sequence, Iterator
+try:
+    from collections.abc import Sequence, Iterator
+except ImportError:
+    from collections import Sequence, Iterator
 from itertools import islice
 
 from future.backports.misc import count   # with step parameter on Py2.6

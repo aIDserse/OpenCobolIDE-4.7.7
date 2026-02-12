@@ -40,7 +40,10 @@ representations of your objects portably across Py3 and Py2, use the
     
 """
 
-from collections import Iterable
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 from numbers import Number
 
 from future.utils import PY3, istext, with_metaclass, isnewbytes
