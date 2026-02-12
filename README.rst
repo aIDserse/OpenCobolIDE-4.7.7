@@ -3,7 +3,7 @@ OpenCobolIDE-4.7.7
 
 OpenCobolIDE is no longer maintained, see https://github.com/OpenCobolIDE/OpenCobolIDE/issues/439
 
-This repository is a practical fork created to keep OpenCobolIDE usable *today* on a modern Slackware system (tested on Slackware 15.0, Python 3.9).
+This repository is a practical fork created to keep OpenCobolIDE usable *today* on modern Linux systems.
 The goal is simple and finite: have a COBOL IDE that can open a file, compile, run, and show output *without* having to fall back to the terminal every time.
 No long-term roadmap, no promise of upstream parity: it exists because I needed it working, and now it does.
 
@@ -15,45 +15,65 @@ What changed in this fork
 
 This fork applies a small set of targeted fixes, mostly focused on:
 
-1) Python compatibility
-   - Removed reliance on deprecated/removed APIs (e.g. old distro detection via platform.linux_distribution()).
+1) Python compatibility (modern versions)
+   - Removed reliance on deprecated/removed APIs (e.g. old distro detection via ``platform.linux_distribution()``).
      The objective is not to replace it with another fragile detection mechanism, but to avoid crashing at import time.
+   - Updated bundled libraries for modern Python:
+     - ``collections.Callable / Iterable / Mapping / MutableMapping / Sequence / Iterator`` moved to ``collections.abc`` where needed.
+     - fixed old regex patterns that rely on inline flags at the end of the expression (newer Python rejects them).
+     - removed/avoided old universal-newline file mode ``'Ur'`` (not valid on modern Python).
 
-2) Qt signal/slot correctness (the “triggered(bool)” problem)
-   - Qt actions connected to slots that did not match the expected signature caused warnings like:
-     ``QObject::connect: Cannot connect QAction::triggered(bool) to (nullptr)::to_lower()``
+2) Qt strictness / float-vs-int issues (PyQt5 on newer distros)
+   - Newer Qt/PyQt builds are stricter about argument types: many APIs require **int** and will crash/throw if given **float**.
+   - Fixed several panels/modes where values like marker height or font metrics became floats and were passed to Qt methods:
+     - ``QSize(...)``, ``QRect.setX/setY/setBottom(...)``, ``QPainter.drawLine(...)``, etc.
+   - This prevents paint-event exceptions that could cascade into recursive repaints and even segfaults.
+
+3) Qt signal/slot correctness (the “triggered(bool)” problem)
+   - Qt actions connected to slots that did not match the expected signature caused warnings like::
+
+       QObject::connect: Cannot connect QAction::triggered(bool) to (nullptr)::to_lower()
 
      In practice this meant a key assumption (“the editor/action target is always valid at that moment”) was not holding.
      When the action wiring failed, the editor could not reliably operate on the current document state, leading to repeated failures and odd behaviour
      (including situations where UI actions effectively became unusable).
      The fix makes the slots and action creation robust and compatible with the Qt signal signature.
 
-3) Backend / extlibs import reliability
-   - OpenCobolIDE bundles a lot of pure-python dependencies in open_cobol_ide/extlibs.
+4) Backend / extlibs import reliability
+   - OpenCobolIDE bundles a lot of pure-python dependencies in ``open_cobol_ide/extlibs``.
      This is useful, but it also means the import path must be deterministic for both the main process and the backend process.
-   - The backend startup script is adjusted so it can always find the bundled libraries without depending on “whatever happens to be first on sys.path”.
+   - The backend startup script is adjusted so it can always find the bundled libraries without depending on “whatever happens to be first on ``sys.path``”.
    - With total honesty, here I used chatgpt because I had no clue of what I was doing (If i want to run OpenCobolIDE I suppose you understand I am not exacly a Python guy...)
 
-4) Eliminating stdlib shadowing
-   - The bundled extlibs contained a module that could shadow Python’s standard library enum module.
-     When that happened, Python would lose enum.IntFlag, and even importing re could explode.
+5) Eliminating stdlib shadowing
+   - The bundled extlibs contained a module that could shadow Python’s standard library ``enum`` module.
+     When that happened, Python would lose ``enum.IntFlag``, and even importing ``re`` could explode.
      The fix removes that shadowing, restoring correct stdlib behaviour.
 
-The compile action is now guarded: if no file is open, it shows a warning instead of crashing or entering an inconsistent state.
+6) Compile button / state handling
+   - The compile action is guarded: if no file is open, it shows a warning instead of crashing or entering an inconsistent state.
    - Additionally, a logic path could lead to the compile button being disabled “by itself” depending on state transitions.
      This was corrected so the UI reliably allows compiling both executables and modules once the prerequisites are met.
 
-This fork is Slackware-centered
--------------------------------
+This fork is Slackware-centered (but not only)
+--------------------------------------------
 
-This work was done and tested on Slackware 15.0 with Python 3.9.
+This work started on Slackware 15.0 (Python 3.9).
 It should be broadly portable, but this fork does not claim universal compatibility.
 Slackware’s conservative base and straightforward packaging model make this kind of “keep it working” effort excepitionally practical.
 
 .. image:: doc/Images/slackoff.jpg
     :align: center
 
+Manjaro / Arch-based status
+++++++++++++++++++++++++++
+
+This fork **should** work on Manjaro and other Arch-based distributions as well.
+In practice the IDE is usable (open/edit/compile/run/output), but Qt can feel a bit clunky on this stack:
+for example switching between open files may work reliably only via ``CTRL+TAB`` (still totally usable, just not perfect).
+
 If you run it on another distribution and it fails, it will most likely be due to:
+
 - newer Python versions removing additional old APIs used by bundled dependencies,
 - different Qt/PyQt packaging and import layouts,
 - stricter packaging defaults.
@@ -78,16 +98,30 @@ extract source, run the build script, then install the resulting package.
 The key difference is that this fork already includes the fixed sources, so you should not need post-install editing.
 
 Other distributions
-+++++++++++++++++++
+###################
 
 If your system provides Python3, PyQt5, and GnuCOBOL, you can generally install from source.
 Because upstream is old and modern build tooling increasingly assumes wheels/PEP517,
-a plain setup.py install-style install may be the simplest approach on some systems.
+a plain ``setup.py install``-style install may be the simplest approach on some systems.
+
+Arch / Manjaro note (GnuCOBOL config)
++++++++++++++++++++++++++++++++++++++
+
+On some Arch-based setups, compiling with ``-std=0`` may fail with::
+
+    /usr/share/gnucobol/config/0.conf: No such file or directory
+
+A simple workaround is to symlink ``0.conf`` to ``default.conf``::
+
+    sudo ln -sf /usr/share/gnucobol/config/default.conf /usr/share/gnucobol/config/0.conf
 
 Screenshot
------------
+----------
 
-.. image:: doc/Images/Screenshot.png
+.. image:: doc/Images/ScreenshotSlack.png
+    :align: center
+
+.. image:: doc/Images/ScreenshotManjaro.png
     :align: center
 
 Get slack!!!
