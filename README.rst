@@ -65,9 +65,25 @@ Slackware’s conservative base and straightforward packaging model make this ki
 .. image:: doc/Images/slackoff.jpg
     :align: center
 
-This fork **should** work on Manjaro and other Arch-based distributions as well.
-In practice the IDE is usable (open/edit/compile/run/output), but Qt can feel a bit clunky on this stack:
-for example switching between open files may work reliably only via ``CTRL+TAB`` (still totally usable, just not perfect).
+Arch-based status
+-----------------
+
+On Manjaro / Arch-based systems this fork **works** (open/edit/compile/run/output). It hasn't been tested on Artix but I mean...
+
+Known issues (mostly Arch-based)
+--------------------------------
+
+Everything essential works, but there are still a couple of editor/UI quirks:
+
+1) Qt controls can be a bit clunky
+   - For example switching between open files may work reliably only via ``CTRL+TAB``. It's still usable, just not perfect.
+
+2) Tab/document confusion on some Arch-based setups (not seen on Slackware)
+   - Sometimes, after opening multiple files, the editor content can appear swapped/overlapped:
+     e.g. file1 content appears under file2, or file2 replaces file1, etc.
+   - For now, the practical recommendation is:
+     - use one file at a time, **or**
+     - work with separate OpenCobolIDE instances (one file per instance).
 
 If you run it on another distribution and it fails, it will most likely be due to:
 
@@ -76,6 +92,21 @@ If you run it on another distribution and it fails, it will most likely be due t
 - stricter packaging defaults.
 
 In that case, fixes should still be possible, but they may require additional small patches.
+
+Dependencies
+------------
+
+On Arch/Manjaro I installed (package names):
+
+- python
+- python-setuptools
+- python-pyqt5
+- qt5-base
+- gnucobol
+- gcc
+- make
+
+(Other distros will have equivalent packages with different names.)
 
 License
 -------
@@ -102,9 +133,9 @@ Because upstream is old and modern build tooling increasingly assumes wheels/PEP
 a plain ``sudo python3 setup.py install`` install may be the simplest approach on some systems.
 
 Arch / Manjaro note (GnuCOBOL config)
-----------
+#####################################
 
-On some Arch-based setups, compiling with ``-std=0`` may fail with::
+On some Arch-based setups, gnucobol compiler with ``-std=0`` may fail with::
 
     /usr/share/gnucobol/config/0.conf: No such file or directory
 
@@ -119,6 +150,9 @@ Screenshot
     :align: center
 
 .. image:: doc/Images/ScreenshotManjaro.png
+    :align: center
+
+.. image:: doc/Images/ScreenshotArch.png
     :align: center
 
 Get slack!!!
