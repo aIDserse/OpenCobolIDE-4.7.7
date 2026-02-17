@@ -16,8 +16,7 @@ What changed in this fork
 This fork applies a small set of targeted fixes, mostly focused on:
 
 1) Python compatibility (modern versions)
-   - Removed reliance on deprecated/removed APIs (e.g. old distro detection via ``platform.linux_distribution()``).
-     The objective is not to replace it with another fragile detection mechanism, but to avoid crashing at import time.
+   - Removed reliance on deprecated/removed APIs (e.g. old distro detection via ``platform.linux_distribution()``). The objective is not to replace it with another fragile detection mechanism, but to avoid crashing at import time.
    - Updated bundled libraries for modern Python:
      - ``collections.Callable / Iterable / Mapping / MutableMapping / Sequence / Iterator`` moved to ``collections.abc`` where needed.
      - fixed old regex patterns that rely on inline flags at the end of the expression (newer Python rejects them).
